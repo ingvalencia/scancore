@@ -12,8 +12,8 @@ export default function BarcodeLabel({ codigo, descripcion, almacen, className =
     const largo = texto.length;
 
     let scale = 2;
-    if (largo <= 8) scale = 2.8;
-    else if (largo <= 14) scale = 2.4;
+    if (largo <= 8) scale = 2.6;
+    else if (largo <= 14) scale = 2.2;
     else if (largo <= 18) scale = 2;
     else if (largo <= 22) scale = 1.7;
     else scale = 1.5;
@@ -22,7 +22,7 @@ export default function BarcodeLabel({ codigo, descripcion, almacen, className =
       bcid: "code39",
       text: texto,
       scale,
-      height: 12,
+      height: 10,
       includetext: false,
       textxalign: "center",
       backgroundcolor: "FFFFFF",
@@ -31,61 +31,77 @@ export default function BarcodeLabel({ codigo, descripcion, almacen, className =
     });
   }, [codigo]);
 
-
- return (
-  <div className="w-60 h-44 border rounded-lg bg-white relative flex flex-col px-4 py-3 overflow-hidden">
-
-    {/* BLOQUE SUPERIOR - CÓDIGO */}
-    <div className="flex flex-col items-center h-[55px]">
-
-      <div className="w-full flex justify-center overflow-hidden">
+  return (
+    <div
+      className={`border rounded-lg bg-white relative flex flex-col items-center justify-between ${className}`}
+      style={{
+        width: "58mm",
+        height: "45mm",
+        padding: "4mm",
+        boxSizing: "border-box",
+      }}
+    >
+     
+      <div style={{ width: "100%", textAlign: "center" }}>
         <canvas
           ref={canvasRef}
-          style={{ maxWidth: "100%", display: "block" }}
+          style={{
+            width: "100%",
+            height: "30px",
+            display: "block",
+            margin: "0 auto",
+          }}
         />
+
+        <p
+          style={{
+            fontSize: "10px",
+            fontWeight: "600",
+            marginTop: "2px",
+            letterSpacing: "0.5px",
+          }}
+        >
+          {codigo}
+        </p>
       </div>
 
-      <p className="text-[11px] tracking-wide font-semibold mt-1">
-        {codigo}
-      </p>
 
-    </div>
-
-    {/* BLOQUE MEDIO - DESCRIPCIÓN */}
-    <div className="text-center h-[56px] px-2 overflow-hidden">
-      <p
-        className="font-semibold text-center break-words"
+      <div
         style={{
-          fontSize: "10.5px",
-          lineHeight: "12.5px",
-          display: "-webkit-box",
-          WebkitLineClamp: 3,
-          WebkitBoxOrient: "vertical",
+          textAlign: "center",
+          fontSize: "9px",
+          lineHeight: "11px",
+          height: "28px",
           overflow: "hidden",
+          display: "-webkit-box",
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: "vertical",
         }}
       >
         {descripcion}
-      </p>
-    </div>
+      </div>
 
-    {/* BLOQUE ALMACÉN */}
-    <div className="text-center h-[12px] -mt-1">
-      <p className="text-[9px] text-gray-600">
+
+      <div style={{ fontSize: "8px", color: "#666" }}>
         {almacen}
-      </p>
+      </div>
+
+
+      <div
+        style={{
+          position: "absolute",
+          bottom: "3mm",
+          width: "100%",
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
+        <img
+          src={logo}
+          alt="Recórcholis"
+          style={{ width: "60px" }}
+        />
+      </div>
     </div>
-
-    {/* FOOTER FIJO - LOGO */}
-    <div className="absolute bottom-3 left-0 w-full flex justify-center">
-      <img
-        src={logo}
-        alt="Recórcholis"
-        style={{ width: "75px" }}
-      />
-    </div>
-
-  </div>
-);
-
-
+  );
 }

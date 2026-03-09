@@ -160,6 +160,131 @@ export default function BarcodeGenerator() {
     reader.readAsBinaryString(file);
   };
 
+ const imprimirEtiquetas = () => {
+  if (!etiquetasRef.current) return;
+
+  const printWindow = window.open("", "_blank", "width=900,height=700");
+  if (!printWindow) return;
+
+  const originalPages = etiquetasRef.current.querySelectorAll(".page");
+
+  const pagesHtml = Array.from(originalPages)
+    .map((page) => {
+      const clone = page.cloneNode(true);
+
+      const originalCanvases = page.querySelectorAll("canvas");
+      const clonedCanvases = clone.querySelectorAll("canvas");
+
+      originalCanvases.forEach((canvas, index) => {
+        const img = document.createElement("img");
+        img.src = canvas.toDataURL("image/png");
+        img.style.width = "100%";
+        img.style.maxWidth = "100%";
+        img.style.display = "block";
+        img.style.margin = "0 auto";
+
+        if (clonedCanvases[index]) {
+          clonedCanvases[index].replaceWith(img);
+        }
+      });
+
+      return clone.outerHTML;
+    })
+    .join("");
+
+  printWindow.document.open();
+  printWindow.document.write(`
+  <!DOCTYPE html>
+  <html lang="es">
+  <head>
+  <meta charset="UTF-8">
+  <title>Imprimir etiquetas</title>
+
+  <style>
+
+  *{
+  box-sizing:border-box;
+  }
+
+  html,body{
+  margin:0;
+  padding:0;
+  background:#fff;
+  font-family:Arial, sans-serif;
+  }
+
+  @page{
+  size:A4;
+  margin:0;
+  }
+
+  body{
+  -webkit-print-color-adjust:exact;
+  print-color-adjust:exact;
+  }
+
+  .page{
+  width:210mm;
+  height:297mm;
+  padding:15mm;
+  margin:0 auto;
+  page-break-after:always;
+  background:#fff;
+  }
+
+  .page:last-child{
+  page-break-after:auto;
+  }
+
+  .page > div{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  grid-template-rows:repeat(4,1fr);
+  gap:8mm;
+  justify-items:center;
+  align-items:center;
+  }
+
+  .page > div > div{
+  width:58mm;
+  height:45mm;
+  border:1px solid #d1d5db;
+  border-radius:10px;
+  background:#fff;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  padding:4mm;
+  overflow:hidden;
+  }
+
+  canvas,
+  img{
+  max-width:100%;
+  }
+
+  </style>
+
+  </head>
+
+  <body>
+
+  ${pagesHtml}
+
+  </body>
+  </html>
+    `);
+
+    printWindow.document.close();
+
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+      }, 500);
+    };
+  };
 
 
 
@@ -486,11 +611,11 @@ export default function BarcodeGenerator() {
 
             </div>
 
-            {/* CONTROLES (NO SE IMPRIME) */}
+
             <div className="flex items-center justify-center px-10 py-6 border-b border-gray-100 no-print">
 
               <button
-                onClick={() => window.print()}
+                onClick={imprimirEtiquetas}
                 className="px-8 py-3 rounded-2xl text-sm font-semibold tracking-wide
                           bg-slate-900 text-white hover:bg-slate-800 shadow-lg"
               >
@@ -510,19 +635,11 @@ export default function BarcodeGenerator() {
                   .reduce((pages, item) => {
                     const etiquetas = [];
 
-                    if (modoGeneracion === "articulo" || modoGeneracion === "ambos") {
-                      etiquetas.push({
-                        key: `${item.articulo}-art`,
-                        codigo: item.articulo,
-                        descripcion: item.descripcion,
-                        almacen: item.almacen,
-                      });
-                    }
 
-                    if (modoGeneracion === "codigo" || modoGeneracion === "ambos") {
+                    if (item.codigo_barras && String(item.codigo_barras).trim() !== "") {
                       etiquetas.push({
-                        key: `${item.articulo}-cod`,
-                        codigo: item.codigo_barras,
+                        key: `${item.codigo_barras}-cod`,
+                        codigo: String(item.codigo_barras).trim(),
                         descripcion: item.descripcion,
                         almacen: item.almacen,
                       });
@@ -538,17 +655,25 @@ export default function BarcodeGenerator() {
                     return pages;
                   }, [])
                   .map((page, pageIndex) => (
-                    <div
+                      <div
                       key={pageIndex}
-                      className="bg-white mx-auto mb-16 shadow-lg rounded-xl"
+                      className="page bg-white mx-auto mb-16 shadow-lg rounded-xl"
                       style={{
                         width: "210mm",
                         minHeight: "297mm",
                         padding: "15mm",
-                        boxSizing: "border-box"
+                        boxSizing: "border-box",
                       }}
                     >
-                      <div className="grid grid-cols-3 gap-6">
+                      <div
+                        className="grid"
+                        style={{
+                          gridTemplateColumns: "repeat(3, 1fr)",
+                          gridTemplateRows: "repeat(4, 1fr)",
+                          gap: "6mm",
+                          height: "100%"
+                        }}
+                      >
                         {page.map(label => (
                           <BarcodeLabel
                             key={label.key}
@@ -570,46 +695,74 @@ export default function BarcodeGenerator() {
       )}
 
       <style>
-    {`
-    @media print {
+{`
+@media print {
 
-      @page {
-        size: A4;
-        margin: 0;
-      }
+  @page {
+    size: A4;
+    margin: 0;
+  }
 
-      body {
-        margin: 0;
-      }
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 210mm;
+    height: auto;
+    background: white;
+  }
 
-      body * {
-        visibility: hidden;
-      }
+  body * {
+    visibility: hidden;
+  }
 
-      .print-area, .print-area * {
-        visibility: visible;
-      }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
 
-      .print-area {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 210mm;
-        min-height: 297mm;
-      }
+  .print-area {
+    width: 210mm;
+    margin: 0 auto;
+    padding: 0;
+    background: white;
+  }
 
-      .no-print {
-        display: none !important;
-      }
+  .page {
+    width: 210mm !important;
+    height: 297mm !important;
+    margin: 0 !important;
+    padding: 15mm !important;
+    box-sizing: border-box !important;
+    break-after: page;
+    page-break-after: always;
+    overflow: hidden !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
 
-      header, footer {
-        display: none !important;
-      }
+  .page > div {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    grid-template-rows: repeat(4, 1fr) !important;
+    gap: 6mm !important;
+    height: 100% !important;
+  }
 
-    }
-    `}
-    </style>
+  .page > div > * {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
 
+  .no-print {
+    display: none !important;
+  }
+
+  header, footer {
+    display: none !important;
+  }
+}
+`}
+</style>
 
 
     </div>
